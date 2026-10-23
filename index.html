@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teachers' Class Attendance Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --primary:#4f46e5; --primary-dark:#3730a3; --accent:#06b6d4;
+  --bg:#f1f5f9; --card:#ffffff; --text:#1e293b; --muted:#64748b;
+  --border:#e2e8f0; --success:#16a34a; --danger:#dc2626; --warn:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px;}
+.topbar{background:linear-gradient(135deg,var(--primary),#7c3aed 60%, var(--accent));color:#fff;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:0 4px 18px rgba(79,70,229,.25);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{font-size:38px;background:rgba(255,255,255,.18);width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
+.brand h1{font-size:22px;font-weight:700;}
+.brand .tagline{font-size:12.5px;opacity:.9;font-weight:300;margin-top:2px;}
+.top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sync-badge{font-size:12px;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.2);font-weight:500;}
+.sync-badge.cloud{background:#052e1a;color:#4ade80;}
+.sync-badge.local{background:#3f2d00;color:#fbbf24;}
+.sync-badge.connecting{background:#1e3a5f;color:#93c5fd;}
+.auth-status{font-size:13px;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:20px;}
+.btn{border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;transition:.2s;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn-light{background:#fff;color:var(--primary-dark);}
+.btn-light:hover:not(:disabled){background:#f1f5f9;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover:not(:disabled){background:var(--primary-dark);}
+.btn-outline{background:#fff;color:var(--primary);border:1.5px solid var(--primary);}
+.btn-outline:hover:not(:disabled){background:#eef2ff;}
+.btn-secondary{background:#e2e8f0;color:#334155;}
+.btn-secondary:hover:not(:disabled){background:#cbd5e1;}
+.btn-danger{background:#fee2e2;color:var(--danger);}
+.btn-danger:hover:not(:disabled){background:#fecaca;}
+.btn-success{background:#dcfce7;color:var(--success);}
+.btn-success:hover:not(:disabled){background:#bbf7d0;}
+.btn.full{width:100%;justify-content:center;margin-top:6px;}
+.btn.small{padding:6px 10px;font-size:12px;}
+.tabs{display:flex;gap:10px;padding:16px 28px 0;flex-wrap:wrap;}
+.tab-btn{background:#fff;border:1.5px solid var(--border);padding:10px 18px;border-radius:30px;font-family:inherit;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer;transition:.2s;}
+.tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 10px rgba(79,70,229,.3);}
+.tab-btn:hover:not(.active){border-color:var(--primary);color:var(--primary);}
+.last-updated{padding:8px 28px 0;font-size:12px;color:var(--muted);}
+.sync-lock-banner{margin:10px 28px 0;background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;padding:12px 16px;border-radius:12px;font-size:13px;display:none;align-items:center;gap:10px;}
+.sync-lock-banner.show{display:flex;}
+main{padding:18px 28px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--card);border-radius:18px;padding:22px 24px;box-shadow:0 2px 14px rgba(15,23,42,.06);margin-bottom:20px;}
+.card.narrow{max-width:560px;}
+.card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;}
+.card-header h2{font-size:18px;font-weight:700;}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+select,input[type=text],input[type=number],input[type=password]{font-family:inherit;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;background:#fff;color:var(--text);}
+select:focus,input:focus{outline:none;border-color:var(--primary);}
+input:disabled,select:disabled{background:#f1f5f9;color:#94a3b8;cursor:not-allowed;}
+.rate-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{background:#eef2ff;color:var(--primary-dark);padding:7px 14px;border-radius:30px;font-size:12.5px;font-weight:500;}
+.chip b{font-weight:700;}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:600px;}
+thead th{background:#f8fafc;color:var(--muted);text-align:left;padding:12px 14px;font-weight:600;border-bottom:2px solid var(--border);position:sticky;top:0;}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border);}
+tbody tr:hover{background:#f8fafc;}
+tfoot td{padding:13px 14px;font-weight:700;background:#eef2ff;color:var(--primary-dark);border-top:2px solid var(--border);}
+.amount{font-weight:700;color:var(--success);}
+.tname{font-weight:600;}
+.tsub{display:block;font-size:11.5px;color:var(--muted);font-weight:400;}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:14px;}
+.sheet-table tr.weekend{background:#fff7ed;}
+.sheet-table input{width:100%;}
+.sheet-table td:nth-child(3){width:110px;}
+.sheet-table td:nth-child(4) input{min-width:200px;}
+.extra-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:18px 0;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.field input,.field select{width:100%;}
+.breakdown{background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;}
+.bd-item{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;color:var(--muted);}
+.bd-item b{color:var(--text);}
+.bd-total{display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:2px dashed var(--border);font-size:16px;font-weight:700;color:var(--primary-dark);}
+.actions-row{display:flex;gap:10px;flex-wrap:wrap;}
+.add-teacher-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.add-teacher-form input{flex:1;min-width:180px;}
+.search-box{width:100%;margin-bottom:14px;}
+.teacher-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+.teacher-card{border:1.5px solid var(--border);border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:.2s;}
+.teacher-card:hover{border-color:var(--primary);box-shadow:0 2px 10px rgba(79,70,229,.1);}
+.tc-name{font-weight:600;font-size:14px;}
+.tc-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.rate-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0;}
+.muted{color:var(--muted);font-size:13px;margin-bottom:10px;}
+.trash-section{margin-top:22px;border-top:2px dashed var(--border);padding-top:16px;}
+.trash-toggle{cursor:pointer;font-weight:700;color:var(--danger);font-size:14px;display:flex;align-items:center;gap:8px;}
+.trash-body{display:none;margin-top:12px;}
+.trash-body.show{display:block;}
+.backup-list{display:flex;flex-direction:column;gap:10px;}
+.backup-item{border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.backup-meta b{display:block;font-size:13.5px;}
+.backup-meta span{font-size:12px;color:var(--muted);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:18px;padding:28px;max-width:400px;width:100%;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.2);}
+.modal-box h2{margin-bottom:6px;font-size:19px;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);}
+.error-text{color:var(--danger);font-size:12.5px;min-height:16px;margin:6px 0;}
+.modal-box .field{margin-bottom:10px;}
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transform:translateY(20px);pointer-events:none;transition:.3s;z-index:200;max-width:340px;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.warn{background:#92400e;}
+.toast.err{background:#991b1b;}
+.loading-overlay{position:fixed;inset:0;background:rgba(241,245,249,.95);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.spinner{width:46px;height:46px;border:4px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:640px){.topbar{padding:16px;}main{padding:12px;}.card{padding:16px;}.tabs{padding:12px 12px 0;}}
+@media print{.topbar,.tabs,.last-updated,.controls,.actions-row,.add-teacher-form,.search-box,.sync-lock-banner{display:none !important;}body{background:#fff;}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p style="color:#475569;font-size:14px;font-weight:500;">Connecting to secure cloud storage…</p>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">🏫</div>
+    <div>
+      <h1>Teachers' Class Attendance Sheet</h1>
+      <p class="tagline">Classes · Exam Duty · Copy Checking — safe, backed-up cloud records</p>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="sync-badge connecting" id="syncBadge">🔄 Connecting...</span>
+    <span class="auth-status" id="authStatus">🔒 Viewing as Guest</span>
+    <button class="btn btn-light" id="loginBtn" type="button">🔑 Login</button>
+    <button class="btn btn-light" id="logoutBtn" type="button" style="display:none;">🚪 Logout</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard" type="button">📊 Dashboard</button>
+  <button class="tab-btn" data-tab="sheet" type="button">🗓️ Teacher Sheet</button>
+  <button class="tab-btn" data-tab="manage" type="button">👥 Manage Teachers</button>
+  <button class="tab-btn" data-tab="rates" type="button">⚙️ Rate Settings</button>
+  <button class="tab-btn" data-tab="backup" type="button">🛡️ Backup & Restore</button>
+</nav>
+<p class="last-updated" id="lastUpdated"></p>
+<div class="sync-lock-banner" id="syncLockBanner">⏳ Finishing cloud sync — editing will unlock automatically in a moment...</div>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="tab-panel active">
+    <div class="card">
+      <div class="card-header">
+        <h2>📊 Monthly Summary — <span id="dashMonthLabel"></span></h2>
+        <div class="controls">
+          <select id="dashMonth"></select>
+          <select id="dashYear"></select>
+          <button class="btn btn-outline" id="exportCsvBtn" type="button">⬇️ Export CSV</button>
+          <button class="btn btn-outline" id="printBtn" type="button">🖨️ Print</button>
+        </div>
+      </div>
+      <div class="rate-chips">
+        <span class="chip">Per Class: <b id="chipClass">—</b></span>
+        <span class="chip">Per Exam Duty: <b id="chipExam">—</b></span>
+        <span class="chip">Per Weekly Copy: <b id="chipWeekly">—</b></span>
+        <span class="chip">Per Model/Monthly Copy: <b id="chipMonthly">—</b></span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Teacher</th><th>Classes</th><th>Exam Duty</th><th>Weekly Copies</th><th>Monthly Copies</th><th>Total Payment</th></tr></thead>
+          <tbody id="dashboardBody"></tbody>
+          <tfoot><tr><td colspan="2">Grand Total</td><td id="grandClasses">0</td><td id="grandExam">0</td><td id="grandWeekly">0</td><td id="grandMonthly">0</td><td id="grandTotal">৳0</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEACHER SHEET -->
+  <section id="tab-sheet" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <h2>🗓️ Teacher Attendance Sheet</h2>
+        <div class="controls">
+          <select id="sheetTeacherSelect"><option value="">-- Select Teacher --</option></select>
+          <select id="sheetMonth"></select>
+          <select id="sheetYear"></select>
+        </div>
+      </div>
+      <div id="sheetContainer"><p class="empty">Please select a teacher to view/edit the attendance sheet.</p></div>
+    </div>
+  </section>
+
+  <!-- MANAGE TEACHERS -->
+  <section id="tab-manage" class="tab-panel">
+    <div class="card">
+      <div class="card-header"><h2>👥 Manage Teachers (<span id="teacherCount">0</span>)</h2></div>
+      <div class="add-teacher-form">
+        <input type="text" id="newTeacherName" class="auth-control" placeholder="Teacher Name">
+        <input type="text" id="newTeacherSubject" class="auth-control" placeholder="Subject / Department (optional)">
+        <button class="btn btn-primary auth-control" id="addTeacherBtn" type="button">➕ Add Teacher</button>
+      </div>
+      <input type="text" id="teacherSearch" class="search-box" placeholder="🔍 Search teacher...">
+      <div class="teacher-list" id="teacherList"></div>
+
+      <div class="trash-section">
+        <div class="trash-toggle" id="trashToggle">🗑️ Recently Deleted (<span id="trashCount">0</span>) — click to expand/restore</div>
+        <div class="trash-body" id="trashBody">
+          <p class="muted">Deleted teachers are kept here safely and are never permanently erased unless you explicitly choose "Delete Forever".</p>
+          <div class="teacher-list" id="trashList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RATE SETTINGS -->
+  <section id="tab-rates" class="tab-panel">
+    <div class="card narrow">
+      <div class="card-header"><h2>⚙️ Rate Settings</h2></div>
+      <p class="muted">All amounts are in Bangladeshi Taka (৳). These rates apply instantly to every calculation across the sheet.</p>
+      <div id="rateForm" class="rate-form">
+        <div class="field"><label>Per Class (৳)</label><input type="number" min="0" id="rateClass" class="auth-control"></div>
+        <div class="field"><label>Per Exam Duty (৳)</label><input type="number" min="0" id="rateExam" class="auth-control"></div>
+        <div class="field"><label>Per Weekly Exam Copy (৳)</label><input type="number" min="0" id="rateWeekly" class="auth-control"></div>
+        <div class="field"><label>Per Model/Monthly Exam Copy (৳)</label><input type="number" min="0" id="rateMonthly" class="auth-control"></div>
+      </div>
+      <button class="btn btn-primary auth-control" id="saveRatesBtn" type="button">💾 Save Rates</button>
+    </div>
+  </section>
+
+  <!-- BACKUP & RESTORE -->
+  <section id="tab-backup" class="tab-panel">
+    <div class="card">
+      <div class="card-header"><h2>🛡️ Backup & Restore</h2></div>
+      <p class="muted">A new backup snapshot is automatically created every time something is saved (last 20 kept). You can restore any previous version, or manually export/import a full JSON backup file for extra safety.</p>
+      <div class="actions-row" style="margin-bottom:18px;">
+        <button class="btn btn-secondary auth-control" id="manualBackupBtn" type="button">💾 Create Backup Now</button>
+        <button class="btn btn-outline" id="exportJsonBtn" type="button">⬇️ Export Full Backup (JSON)</button>
+        <button class="btn btn-outline auth-control" id="importJsonBtn" type="button">⬆️ Import JSON Backup</button>
+        <input type="file" id="importJsonInput" accept="application/json" style="display:none;">
+      </div>
+      <h3 style="font-size:14.5px;margin-bottom:10px;color:var(--muted);">📜 Version History</h3>
+      <div class="backup-list" id="backupList"><p class="empty">No backups yet.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeLoginModal" type="button">✕</button>
+    <h2>🔑 Admin Login</h2>
+    <p class="muted">Login to add / edit / remove data. Everyone else can view everything in read-only mode.</p>
+    <div class="field"><label>Email</label><input type="email" id="loginUser" placeholder="Admin email" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="Password"></div>
+    <p class="error-text" id="loginError"></p>
+    <button class="btn btn-primary full" id="loginSubmit" type="button">Login</button>
+  </div>
+</div>
+
+<!-- PERMANENT DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeDeleteModal" type="button">✕</button>
+    <h2>⚠️ Permanently Delete</h2>
+    <p class="muted">This cannot be undone through the normal Restore button. A final safety backup will still be kept in Version History. Type <b>DELETE</b> below to confirm.</p>
+    <div class="field"><input type="text" id="deleteConfirmInput" placeholder="Type DELETE"></div>
+    <p class="error-text" id="deleteError"></p>
+    <button class="btn btn-danger full" id="deleteConfirmBtn" type="button">Delete Forever</button>
+  </div>
+</div>
+
+<!-- RESTORE CONFIRM MODAL -->
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeRestoreModal" type="button">✕</button>
+    <h2>⏪ Restore This Backup?</h2>
+    <p class="muted" id="restoreInfoText">This will restore data from the selected backup. A safety snapshot of your CURRENT data will be taken first, so this action is itself undoable.</p>
+    <button class="btn btn-primary full" id="restoreConfirmBtn" type="button">Yes, Restore Now</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Supabase browser config: replace both placeholders with Project Settings > API values.
+   Only the publishable/anon key belongs in browser code. NEVER put service_role here. */
+const SUPABASE_URL = 'https://cxlwbbgfghovsloileaj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_uI2spitTtQWSDVyylm9_sQ_Cb4w94XP';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let db = null, useFirestore = false;
+let teachersSynced = false, ratesSynced = false;
+let allTeachers = [];
+let ratesData = { perClass:330, perExamDuty:200, perWeeklyCopy:3, perMonthlyCopy:10 };
+let backupsCache = [];
+let draftSheet = null;
+let ratesDirty = false;
+let dashMonthKey = '', sheetTeacherId = null, sheetMonthKey = '';
+let pendingDeleteId = null;
+let pendingRestoreBackup = null;
+
+/* ---------------- Helpers ---------------- */
+function uid(){ return 't_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function escapeHtml(str){ return String(str==null?'':str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function fmt(n){ n=Number(n)||0; return '৳ '+n.toLocaleString('en-US',{maximumFractionDigits:2}); }
+function isLoggedIn(){ return !!currentUser; }
+function monthKeyLabel(key){ const [y,m]=key.split('-'); return MONTH_NAMES[parseInt(m)-1]+' '+y; }
+function daysInMonth(key){ const [y,m]=key.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function isFullySynced(){ return teachersSynced && ratesSynced; }
+function activeTeachers(){ return allTeachers.filter(t=>!t.deleted); }
+function deletedTeachers(){ return allTeachers.filter(t=>t.deleted); }
+
+function toast(msg, type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show'+(type?(' '+type):'');
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+/* ---------------- Cloud Init ---------------- */
+async function initCloud(){
+  try {
+    if (SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) throw new Error('Please configure Supabase URL and publishable key in this HTML.');
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) throw sessionError;
+    currentUser = sessionData.session?.user || null;
+    if(currentUser) {
+      const authorized = await refreshAdminStatus();
+      if(!authorized) { await supabaseClient.auth.signOut(); currentUser = null; }
+    }
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      // Defer database work until after the auth callback returns.
+      Promise.resolve().then(async () => {
+        currentUser = session?.user || null;
+        if(currentUser) {
+          const authorized = await refreshAdminStatus();
+          if(!authorized) { await supabaseClient.auth.signOut(); currentUser = null; backupsCache = []; }
+          else await loadAdminBackups();
+        } else { backupsCache = []; }
+        applyAuthState(); renderAll(); renderSheetTable(); renderBackupList();
+      }).catch(e => console.error('Auth state refresh failed', e));
+    });
+    const [teachersRes, ratesRes] = await Promise.all([
+      supabaseClient.from('teachers').select('*').order('name'),
+      supabaseClient.from('app_settings').select('*').eq('key','rates').maybeSingle()
+    ]);
+    if (teachersRes.error) throw teachersRes.error;
+    if (ratesRes.error) throw ratesRes.error;
+    allTeachers = (teachersRes.data||[]).map(t=>({id:t.id,name:t.name,subject:t.subject||'',months:t.months||{},deleted:!!t.deleted,deletedAt:t.deleted_at||null,createdAt:t.created_at,updatedAt:t.updated_at}));
+    if (ratesRes.data?.value) ratesData = Object.assign({}, ratesData, ratesRes.data.value);
+    await loadAdminBackups();
+    teachersSynced = true; ratesSynced = true; useFirestore = true;
+    afterDataChange(); renderBackupList(); applyAuthState();
+    supabaseClient.channel('tcas-live').on('postgres_changes',{event:'*',schema:'public',table:'teachers'},async()=>{
+      const {data,error}=await supabaseClient.from('teachers').select('*').order('name');
+      if(!error){allTeachers=(data||[]).map(t=>({id:t.id,name:t.name,subject:t.subject||'',months:t.months||{},deleted:!!t.deleted,deletedAt:t.deleted_at||null,createdAt:t.created_at,updatedAt:t.updated_at}));afterDataChange();}
+    }).on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},async()=>{
+      const {data,error}=await supabaseClient.from('app_settings').select('*').eq('key','rates').maybeSingle();
+      if(!error&&data?.value){ratesData=Object.assign({},ratesData,data.value);ratesDirty=false;ratesSynced=true;afterDataChange();}
+    }).on('postgres_changes',{event:'*',schema:'public',table:'backups'},async()=>{
+      const {data,error}=await supabaseClient.from('backups').select('*').order('created_at',{ascending:false}).limit(20);
+      if(!error){backupsCache=(data||[]).map(b=>Object.assign({id:b.id,createdAt:b.created_at},b.payload||{}));renderBackupList();}
+    }).subscribe();
+  } catch(e) {
+    console.error('Supabase init failed',e);
+    teachersSynced=false; ratesSynced=false; useFirestore=false;
+    document.getElementById('loadingOverlay').style.display='none';
+    toast('Supabase connection failed: '+(e.message||'check config, SQL and RLS'),'err');
+    updateSyncBadge(); updateSyncLockBanner(); applyAuthState();
+  }
+}
+function loadLocalFallback(){
+  try{
+    allTeachers = JSON.parse(localStorage.getItem('tcas_local_teachers')||'[]');
+    ratesData = JSON.parse(localStorage.getItem('tcas_local_rates')||'null') || ratesData;
+    backupsCache = JSON.parse(localStorage.getItem('tcas_local_backups')||'[]');
+  }catch(e){}
+  teachersSynced = true; ratesSynced = true;
+  afterDataChange();
+  renderBackupList();
+}
+function persistLocalFallback(){
+  localStorage.setItem('tcas_local_teachers', JSON.stringify(allTeachers));
+  localStorage.setItem('tcas_local_rates', JSON.stringify(ratesData));
+  localStorage.setItem('tcas_local_backups', JSON.stringify(backupsCache));
+}
+function mirrorToLocalStorage(){
+  try{
+    localStorage.setItem('tcas_mirror_teachers', JSON.stringify(allTeachers));
+    localStorage.setItem('tcas_mirror_rates', JSON.stringify(ratesData));
+    localStorage.setItem('tcas_mirror_time', new Date().toISOString());
+  }catch(e){}
+}
+
+function afterDataChange(){
+  mirrorToLocalStorage();
+  updateSyncBadge();
+  updateSyncLockBanner();
+  if(isFullySynced()) document.getElementById('loadingOverlay').style.display = 'none';
+  renderAll();
+  if(sheetTeacherId){ loadDraftSheet(); renderSheetTable(); }
+  document.getElementById('lastUpdated').textContent = 'Last synced: '+new Date().toLocaleTimeString();
+}
+function updateSyncBadge(){
+  const el = document.getElementById('syncBadge');
+  if(!isFullySynced()){ el.textContent='🔄 Syncing...'; el.className='sync-badge connecting'; return; }
+  el.textContent = useFirestore ? '☁️ Cloud Sync Active — Safe' : '💾 Local Storage Mode';
+  el.className = 'sync-badge '+(useFirestore ? 'cloud':'local');
+}
+function updateSyncLockBanner(){
+  document.getElementById('syncLockBanner').classList.toggle('show', !isFullySynced());
+}
+
+
+async function loadAdminBackups(){
+  // Backups contain historical snapshots and are private to admins; never query them as a guest.
+  if(!isLoggedIn()){ backupsCache=[]; renderBackupList(); return; }
+  const {data,error}=await supabaseClient.from('backups').select('*').order('created_at',{ascending:false}).limit(20);
+  if(error){ backupsCache=[]; renderBackupList(); console.error('Could not load admin backups',error); return; }
+  backupsCache=(data||[]).map(b=>Object.assign({id:b.id,createdAt:b.created_at},b.payload||{}));
+  renderBackupList();
+}
+async function refreshAdminStatus(){
+  if(!currentUser)return false;
+  const {data,error}=await supabaseClient.from('app_admins').select('user_id').eq('user_id',currentUser.id).maybeSingle();
+  if(error||!data){currentUser=null;toast('This account is not authorized as an app admin.','err');return false;}
+  return true;
+}
+
+/* ---------------- Backup System ---------------- */
+function buildBackupPayload(action){
+  return {
+    action,
+    rates: Object.assign({}, ratesData),
+    teachers: allTeachers.map(t=>({ id:t.id, name:t.name, subject:t.subject||'', months:t.months||{}, deleted:!!t.deleted, deletedAt: t.deletedAt||null }))
+  };
+}
+async function createBackupSnapshot(action, cb){
+  const payload=buildBackupPayload(action);
+  if(!isLoggedIn()){ if(cb) cb(); return; }
+  const {error}=await supabaseClient.from('backups').insert({action, payload, created_at:new Date().toISOString()});
+  if(error){console.error(error);toast('Backup save failed: '+error.message,'err');}
+  else { await cleanupOldBackups(); }
+  if(cb) cb();
+}
+async function cleanupOldBackups(){
+  // Keep all historical backups in the database. The UI shows the newest 20 only.
+}
+function renderBackupList(){
+  const el = document.getElementById('backupList');
+  if(!isLoggedIn()){ el.innerHTML = '<p class="empty">Backups are private. Log in as an authorized admin to view or restore them.</p>'; return; }
+  if(!backupsCache.length){ el.innerHTML = '<p class="empty">No backups yet. One will be created automatically after your first save.</p>'; return; }
+  el.innerHTML = backupsCache.map((b,i)=>{
+    const dateStr = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().toLocaleString() : (b.createdAt ? new Date(b.createdAt).toLocaleString() : '—');
+    const count = (b.teachers||[]).filter(t=>!t.deleted).length;
+    return '<div class="backup-item"><div class="backup-meta"><b>'+escapeHtml(b.action||'Backup')+'</b><span>'+dateStr+' · '+count+' active teacher(s)</span></div>'+
+      '<button class="btn btn-outline small restore-btn auth-control" data-idx="'+i+'" type="button">⏪ Restore</button></div>';
+  }).join('');
+  el.querySelectorAll('.restore-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!isLoggedIn()){ toast('Please login to restore a backup'); return; }
+      pendingRestoreBackup = backupsCache[parseInt(btn.dataset.idx)];
+      document.getElementById('restoreModal').classList.add('show');
+    });
+  });
+}
+async function performRestore(backup){
+  if(!isLoggedIn()){toast('Please login to restore a backup');return;}
+  await createBackupSnapshot('Pre-restore safety snapshot');
+  const rates=backup.rates||ratesData;
+  const {error:rateError}=await supabaseClient.from('app_settings').upsert({key:'rates',value:rates,updated_at:new Date().toISOString()},{onConflict:'key'});
+  if(rateError){toast('Could not restore rates: '+rateError.message,'err');return;}
+  const rows=(backup.teachers||[]).map(t=>({id:String(t.id),name:t.name||'Unnamed',subject:t.subject||'',months:t.months||{},deleted:!!t.deleted,deleted_at:t.deletedAt||null,created_at:t.createdAt||new Date().toISOString(),updated_at:new Date().toISOString()}));
+  if(rows.length){const {error}=await supabaseClient.from('teachers').upsert(rows,{onConflict:'id'});if(error){toast('Some teachers could not be restored: '+error.message,'err');return;}}
+  ratesData=Object.assign({},rates); const {data}=await supabaseClient.from('teachers').select('*').order('name');
+  if(data) allTeachers=data.map(t=>({id:t.id,name:t.name,subject:t.subject||'',months:t.months||{},deleted:!!t.deleted,deletedAt:t.deleted_at||null,createdAt:t.created_at,updatedAt:t.updated_at}));
+  afterDataChange();toast('✅ Restore completed. Note: records absent from the backup were not deleted.');
+}
+function exportJsonBackup(){
+  const payload = buildBackupPayload('Manual export');
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'attendance_backup_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importJsonBackup(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.teachers) || !data.rates) throw new Error('Invalid file format');
+      pendingRestoreBackup = data;
+      document.getElementById('restoreInfoText').textContent = 'This will import and restore data from the selected JSON file. A safety snapshot of your CURRENT data will be taken first.';
+      document.getElementById('restoreModal').classList.add('show');
+    }catch(e){
+      toast('⚠️ Invalid backup file — could not read it', 'err');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------------- Auth ---------------- */
+function openLogin(){ document.getElementById('loginModal').classList.add('show'); document.getElementById('loginError').textContent=''; }
+function closeLogin(){ document.getElementById('loginModal').classList.remove('show'); }
+async function doLogin(){
+  const email=document.getElementById('loginUser').value.trim();
+  const password=document.getElementById('loginPass').value;
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){document.getElementById('loginError').textContent=error.message||'Login failed.';return;}
+  currentUser=data.user;
+  const authorized=await refreshAdminStatus();
+  if(!authorized){await supabaseClient.auth.signOut();applyAuthState();return;}
+  closeLogin();document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+  await loadAdminBackups();applyAuthState();renderAll();renderSheetTable();toast('Logged in ✓');
+}
+async function doLogout(){await supabaseClient.auth.signOut();currentUser=null;backupsCache=[];toast('Logged out');applyAuthState();renderAll();renderSheetTable();renderBackupList();}
+function applyAuthState(){
+  const li=isLoggedIn();
+  const email=currentUser?.email||'Admin';
+  document.getElementById('authStatus').innerHTML=li?'🔓 Logged in as <b>'+escapeHtml(email)+'</b>':'🔒 Viewing as Guest (read-only)';
+  document.getElementById('loginBtn').style.display=li?'none':'inline-flex';
+  document.getElementById('logoutBtn').style.display=li?'inline-flex':'none';
+  document.querySelectorAll('.auth-control').forEach(el=>{el.disabled=!(li&&isFullySynced());});
+}
+
+/* ---------------- Tabs ---------------- */
+function showTab(tab){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  if(tab==='sheet') renderSheetTable();
+}
+
+/* ---------------- Calculation ---------------- */
+function calcTeacherMonthTotal(teacher, monthKey){
+  const rates = ratesData;
+  const m = teacher.months && teacher.months[monthKey];
+  if(!m) return {classes:0,examDuty:0,weeklyCopies:0,monthlyCopies:0,total:0};
+  let totalClasses = 0;
+  Object.values(m.days||{}).forEach(d=>{ totalClasses += Number(d.classes)||0; });
+  const classAmount = totalClasses*Number(rates.perClass||0);
+  const examDuty = Number(m.examDuty)||0;
+  const examAmount = examDuty*Number(rates.perExamDuty||0);
+  const weeklyCopies = Number(m.weeklyCopies)||0;
+  const weeklyAmount = weeklyCopies*Number(rates.perWeeklyCopy||0);
+  const monthlyCopies = Number(m.monthlyCopies)||0;
+  const monthlyAmount = monthlyCopies*Number(rates.perMonthlyCopy||0);
+  const total = classAmount+examAmount+weeklyAmount+monthlyAmount;
+  return {classes:totalClasses,examDuty,weeklyCopies,monthlyCopies,total};
+}
+
+/* ---------------- Render: Master ---------------- */
+function renderAll(){
+  renderTeacherSelectOptions();
+  renderDashboard();
+  renderTeachersManage();
+  updateRatesDisplay();
+  applyAuthState();
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  document.getElementById('chipClass').textContent = '৳'+ratesData.perClass;
+  document.getElementById('chipExam').textContent = '৳'+ratesData.perExamDuty;
+  document.getElementById('chipWeekly').textContent = '৳'+ratesData.perWeeklyCopy;
+  document.getElementById('chipMonthly').textContent = '৳'+ratesData.perMonthlyCopy;
+  document.getElementById('dashMonthLabel').textContent = monthKeyLabel(dashMonthKey);
+
+  const tbody = document.getElementById('dashboardBody');
+  const teachers = activeTeachers().slice().sort((a,b)=>a.name.localeCompare(b.name));
+  let grand = {classes:0,examDuty:0,weeklyCopies:0,monthlyCopies:0,total:0};
+  let rows = '';
+  teachers.forEach((t,i)=>{
+    const r = calcTeacherMonthTotal(t, dashMonthKey);
+    grand.classes+=r.classes; grand.examDuty+=r.examDuty; grand.weeklyCopies+=r.weeklyCopies; grand.monthlyCopies+=r.monthlyCopies; grand.total+=r.total;
+    rows += '<tr><td>'+(i+1)+'</td><td class="tname">'+escapeHtml(t.name)+(t.subject?'<span class="tsub">'+escapeHtml(t.subject)+'</span>':'')+
+      '</td><td>'+r.classes+'</td><td>'+r.examDuty+'</td><td>'+r.weeklyCopies+'</td><td>'+r.monthlyCopies+'</td><td class="amount">'+fmt(r.total)+'</td></tr>';
+  });
+  tbody.innerHTML = rows || '<tr><td colspan="7" class="empty">No teachers added yet.</td></tr>';
+  document.getElementById('grandClasses').textContent = grand.classes;
+  document.getElementById('grandExam').textContent = grand.examDuty;
+  document.getElementById('grandWeekly').textContent = grand.weeklyCopies;
+  document.getElementById('grandMonthly').textContent = grand.monthlyCopies;
+  document.getElementById('grandTotal').textContent = fmt(grand.total);
+}
+
+/* ---------------- Teacher Select ---------------- */
+function renderTeacherSelectOptions(){
+  const sel = document.getElementById('sheetTeacherSelect');
+  const prev = sel.value;
+  const teachers = activeTeachers().slice().sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">-- Select Teacher --</option>' + teachers.map(t=>'<option value="'+t.id+'">'+escapeHtml(t.name)+'</option>').join('');
+  if(teachers.find(t=>t.id===prev)) sel.value = prev;
+}
+
+/* ---------------- Teacher Sheet ---------------- */
+function loadDraftSheet(){
+  const teacher = allTeachers.find(t=>t.id===sheetTeacherId);
+  if(!teacher){ draftSheet = null; return; }
+  const m = teacher.months && teacher.months[sheetMonthKey];
+  draftSheet = {
+    teacherId: sheetTeacherId, monthKey: sheetMonthKey,
+    days: m ? JSON.parse(JSON.stringify(m.days||{})) : {},
+    examDuty: m ? (m.examDuty||0) : 0,
+    weeklyCopies: m ? (m.weeklyCopies||0) : 0,
+    monthlyCopies: m ? (m.monthlyCopies||0) : 0
+  };
+}
+function renderSheetTable(){
+  const container = document.getElementById('sheetContainer');
+  if(!sheetTeacherId || !draftSheet){ container.innerHTML = '<p class="empty">Please select a teacher to view/edit the attendance sheet.</p>'; return; }
+  const teacher = allTeachers.find(t=>t.id===sheetTeacherId);
+  if(!teacher){ container.innerHTML = '<p class="empty">Teacher not found.</p>'; return; }
+  const days = daysInMonth(sheetMonthKey);
+  const [y,mo] = sheetMonthKey.split('-').map(Number);
+  const li = isLoggedIn() && isFullySynced();
+  let rows = '';
+  for(let d=1; d<=days; d++){
+    const dateStr = sheetMonthKey+'-'+String(d).padStart(2,'0');
+    const dayObj = draftSheet.days[dateStr] || {classes:0,comment:''};
+    const dObj = new Date(y, mo-1, d);
+    const dow = dObj.toLocaleDateString('en-US',{weekday:'short'});
+    const weekend = [0,6].includes(dObj.getDay());
+    rows += '<tr class="'+(weekend?'weekend':'')+'">'+
+      '<td>'+d+'</td><td>'+dow+'</td>'+
+      '<td><input type="number" min="0" class="auth-control cls-input" data-date="'+dateStr+'" value="'+(dayObj.classes||0)+'" '+(li?'':'disabled')+'></td>'+
+      '<td><input type="text" class="auth-control cmt-input" data-date="'+dateStr+'" value="'+escapeHtml(dayObj.comment||'')+'" placeholder="comment..." '+(li?'':'disabled')+'></td></tr>';
+  }
+  container.innerHTML =
+    '<div class="table-wrap"><table class="sheet-table"><thead><tr><th>Date</th><th>Day</th><th>Classes</th><th>Comment</th></tr></thead>'+
+    '<tbody id="sheetDaysBody">'+rows+'</tbody></table></div>'+
+    '<div class="extra-grid">'+
+      '<div class="field"><label>Exam Duty Count</label><input type="number" min="0" id="examDutyInput" class="auth-control" value="'+draftSheet.examDuty+'" '+(li?'':'disabled')+'></div>'+
+      '<div class="field"><label>Weekly Exam Copies</label><input type="number" min="0" id="weeklyCopiesInput" class="auth-control" value="'+draftSheet.weeklyCopies+'" '+(li?'':'disabled')+'></div>'+
+      '<div class="field"><label>Monthly/Model Exam Copies</label><input type="number" min="0" id="monthlyCopiesInput" class="auth-control" value="'+draftSheet.monthlyCopies+'" '+(li?'':'disabled')+'></div>'+
+    '</div>'+
+    '<div class="breakdown" id="breakdownBox"></div>'+
+    '<div class="actions-row">'+
+      '<button class="btn btn-secondary" id="refreshSheetBtn" type="button">🔄 Refresh (discard unsaved)</button>'+
+      '<button class="btn btn-primary auth-control" id="saveSheetBtn" type="button" '+(li?'':'disabled')+'>💾 Save Changes</button>'+
+    '</div>';
+  attachSheetEvents();
+  updateBreakdown();
+}
+function attachSheetEvents(){
+  document.querySelectorAll('.cls-input').forEach(inp=>inp.addEventListener('input', e=>{
+    const date = e.target.dataset.date;
+    if(!draftSheet.days[date]) draftSheet.days[date] = {classes:0,comment:''};
+    draftSheet.days[date].classes = parseInt(e.target.value)||0;
+    updateBreakdown();
+  }));
+  document.querySelectorAll('.cmt-input').forEach(inp=>inp.addEventListener('input', e=>{
+    const date = e.target.dataset.date;
+    if(!draftSheet.days[date]) draftSheet.days[date] = {classes:0,comment:''};
+    draftSheet.days[date].comment = e.target.value;
+  }));
+  const ed=document.getElementById('examDutyInput'), wc=document.getElementById('weeklyCopiesInput'), mc=document.getElementById('monthlyCopiesInput');
+  if(ed) ed.addEventListener('input', e=>{ draftSheet.examDuty = parseInt(e.target.value)||0; updateBreakdown(); });
+  if(wc) wc.addEventListener('input', e=>{ draftSheet.weeklyCopies = parseInt(e.target.value)||0; updateBreakdown(); });
+  if(mc) mc.addEventListener('input', e=>{ draftSheet.monthlyCopies = parseInt(e.target.value)||0; updateBreakdown(); });
+  const rb=document.getElementById('refreshSheetBtn'), sb=document.getElementById('saveSheetBtn');
+  if(rb) rb.addEventListener('click', ()=>{ loadDraftSheet(); renderSheetTable(); toast('Reloaded saved data'); });
+  if(sb) sb.addEventListener('click', saveSheet);
+}
+function updateBreakdown(){
+  const rates = ratesData;
+  let totalClasses = 0;
+  Object.values(draftSheet.days).forEach(d=>totalClasses += Number(d.classes)||0);
+  const classAmount = totalClasses*Number(rates.perClass||0);
+  const examAmount = draftSheet.examDuty*Number(rates.perExamDuty||0);
+  const weeklyAmount = draftSheet.weeklyCopies*Number(rates.perWeeklyCopy||0);
+  const monthlyAmount = draftSheet.monthlyCopies*Number(rates.perMonthlyCopy||0);
+  const total = classAmount+examAmount+weeklyAmount+monthlyAmount;
+  const box = document.getElementById('breakdownBox');
+  if(!box) return;
+  box.innerHTML =
+    '<div class="bd-item"><span>Total Classes</span><b>'+totalClasses+' × ৳'+rates.perClass+' = '+fmt(classAmount)+'</b></div>'+
+    '<div class="bd-item"><span>Exam Duty</span><b>'+draftSheet.examDuty+' × ৳'+rates.perExamDuty+' = '+fmt(examAmount)+'</b></div>'+
+    '<div class="bd-item"><span>Weekly Exam Copies</span><b>'+draftSheet.weeklyCopies+' × ৳'+rates.perWeeklyCopy+' = '+fmt(weeklyAmount)+'</b></div>'+
+    '<div class="bd-item"><span>Monthly/Model Copies</span><b>'+draftSheet.monthlyCopies+' × ৳'+rates.perMonthlyCopy+' = '+fmt(monthlyAmount)+'</b></div>'+
+    '<div class="bd-total"><span>Grand Total</span><b>'+fmt(total)+'</b></div>';
+}
+async function saveSheet(){
+  if(!isLoggedIn()){toast('Please login to save changes');return;}
+  if(!isFullySynced()){toast('Please wait for cloud sync to finish first');return;}
+  const teacher=allTeachers.find(t=>t.id===sheetTeacherId);if(!teacher){toast('Please select a valid teacher');return;}
+  const monthData={days:JSON.parse(JSON.stringify(draftSheet.days)),examDuty:draftSheet.examDuty,weeklyCopies:draftSheet.weeklyCopies,monthlyCopies:draftSheet.monthlyCopies};
+  const months=Object.assign({},teacher.months||{});months[sheetMonthKey]=monthData;
+  const {error}=await supabaseClient.from('teachers').update({months,updated_at:new Date().toISOString()}).eq('id',sheetTeacherId);
+  if(error){console.error(error);toast('Save failed: '+error.message,'err');return;}
+  teacher.months=months;teacher.updatedAt=new Date().toISOString();afterDataChange();await createBackupSnapshot('Updated sheet: '+teacher.name+' — '+monthKeyLabel(sheetMonthKey));toast('✓ Saved to Supabase');
+}
+
+/* ---------------- Manage Teachers ---------------- */
+function renderTeachersManage(){
+  const list = document.getElementById('teacherList');
+  const query = (document.getElementById('teacherSearch').value||'').toLowerCase();
+  const teachers = activeTeachers().filter(t=>t.name.toLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name));
+  const li = isLoggedIn() && isFullySynced();
+  list.innerHTML = teachers.map(t=>
+    '<div class="teacher-card"><div class="tc-info"><div class="tc-name">'+escapeHtml(t.name)+'</div><div class="tc-sub">'+escapeHtml(t.subject||'—')+'</div></div>'+
+    '<button class="btn btn-danger auth-control small soft-del-btn" data-id="'+t.id+'" '+(li?'':'disabled')+'>🗑️ Remove</button></div>'
+  ).join('') || '<p class="empty">No teachers found.</p>';
+  list.querySelectorAll('.soft-del-btn').forEach(btn=>btn.addEventListener('click', ()=>softDeleteTeacher(btn.dataset.id)));
+  document.getElementById('teacherCount').textContent = activeTeachers().length;
+
+  const trash = deletedTeachers();
+  document.getElementById('trashCount').textContent = trash.length;
+  const trashList = document.getElementById('trashList');
+  trashList.innerHTML = trash.map(t=>
+    '<div class="teacher-card"><div class="tc-info"><div class="tc-name">'+escapeHtml(t.name)+'</div><div class="tc-sub">'+escapeHtml(t.subject||'—')+'</div></div>'+
+    '<div style="display:flex;gap:6px;">'+
+    '<button class="btn btn-success auth-control small restore-teacher-btn" data-id="'+t.id+'" '+(li?'':'disabled')+'>♻️ Restore</button>'+
+    '<button class="btn btn-danger auth-control small perm-del-btn" data-id="'+t.id+'" '+(li?'':'disabled')+'>🗑️ Forever</button>'+
+    '</div></div>'
+  ).join('') || '<p class="empty">Trash is empty.</p>';
+  trashList.querySelectorAll('.restore-teacher-btn').forEach(btn=>btn.addEventListener('click', ()=>restoreTeacher(btn.dataset.id)));
+  trashList.querySelectorAll('.perm-del-btn').forEach(btn=>btn.addEventListener('click', ()=>openDeleteModal(btn.dataset.id)));
+}
+async function addTeacher(){
+  if(!isLoggedIn()){toast('Please login to add a teacher');return;} if(!isFullySynced()){toast('Please wait for cloud sync to finish first');return;}
+  const nameInp=document.getElementById('newTeacherName'),subInp=document.getElementById('newTeacherSubject');const name=nameInp.value.trim();if(!name){toast('Please enter a teacher name');return;}
+  const newData={id:uid(),name,subject:subInp.value.trim(),months:{},deleted:false,deleted_at:null};
+  const {error}=await supabaseClient.from('teachers').insert(newData);
+  if(error){toast('Could not add teacher: '+error.message,'err');return;}
+  nameInp.value='';subInp.value='';allTeachers.push({id:newData.id,name,subject:newData.subject,months:{},deleted:false,deletedAt:null});afterDataChange();await createBackupSnapshot('Added teacher: '+name);toast('Teacher added ✓');
+}
+async function softDeleteTeacher(id){
+  if(!isLoggedIn())return;const t=allTeachers.find(x=>x.id===id);if(!t)return;
+  if(!confirm('Move "'+t.name+'" to Recently Deleted? You can restore it anytime from there.'))return;
+  const {error}=await supabaseClient.from('teachers').update({deleted:true,deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Could not remove: '+error.message,'err');return;}t.deleted=true;t.deletedAt=new Date().toISOString();afterDataChange();await createBackupSnapshot('Deleted teacher: '+t.name);toast('Moved to Recently Deleted');
+}
+async function restoreTeacher(id){
+  if(!isLoggedIn())return;const t=allTeachers.find(x=>x.id===id);if(!t)return;
+  const {error}=await supabaseClient.from('teachers').update({deleted:false,deleted_at:null,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Could not restore: '+error.message,'err');return;}t.deleted=false;t.deletedAt=null;afterDataChange();await createBackupSnapshot('Restored teacher: '+t.name);toast('Teacher restored ✓');
+}
+function openDeleteModal(id){
+  pendingDeleteId = id;
+  document.getElementById('deleteConfirmInput').value='';
+  document.getElementById('deleteError').textContent='';
+  document.getElementById('deleteModal').classList.add('show');
+}
+async function confirmPermanentDelete(){
+  const val=document.getElementById('deleteConfirmInput').value.trim();if(val!=='DELETE'){document.getElementById('deleteError').textContent='Please type DELETE exactly to confirm.';return;}
+  const t=allTeachers.find(x=>x.id===pendingDeleteId);if(!t)return;
+  await createBackupSnapshot('Final safety copy before permanent delete: '+t.name);
+  const {error}=await supabaseClient.from('teachers').delete().eq('id',pendingDeleteId);
+  if(error){toast('Could not delete: '+error.message,'err');return;}
+  allTeachers=allTeachers.filter(x=>x.id!==pendingDeleteId);afterDataChange();toast('Permanently deleted');document.getElementById('deleteModal').classList.remove('show');
+}
+
+/* ---------------- Rate Settings ---------------- */
+function updateRatesDisplay(){
+  if(!ratesDirty){
+    document.getElementById('rateClass').value = ratesData.perClass;
+    document.getElementById('rateExam').value = ratesData.perExamDuty;
+    document.getElementById('rateWeekly').value = ratesData.perWeeklyCopy;
+    document.getElementById('rateMonthly').value = ratesData.perMonthlyCopy;
+  }
+  const li = isLoggedIn() && isFullySynced();
+  document.querySelectorAll('#rateForm input').forEach(i=>i.disabled=!li);
+  document.getElementById('saveRatesBtn').disabled = !li;
+}
+async function saveRates(){
+  if(!isLoggedIn()){toast('Please login to edit rates');return;}if(!isFullySynced()){toast('Please wait for cloud sync to finish first');return;}
+  const newRates={perClass:parseFloat(document.getElementById('rateClass').value)||0,perExamDuty:parseFloat(document.getElementById('rateExam').value)||0,perWeeklyCopy:parseFloat(document.getElementById('rateWeekly').value)||0,perMonthlyCopy:parseFloat(document.getElementById('rateMonthly').value)||0};
+  const {error}=await supabaseClient.from('app_settings').upsert({key:'rates',value:newRates,updated_at:new Date().toISOString()},{onConflict:'key'});
+  if(error){toast('Could not save rates: '+error.message,'err');return;}ratesData=newRates;ratesDirty=false;afterDataChange();await createBackupSnapshot('Updated rates');toast('Rates updated ✓');
+}
+
+/* ---------------- Export CSV ---------------- */
+function exportDashboardCsv(){
+  const teachers = activeTeachers().slice().sort((a,b)=>a.name.localeCompare(b.name));
+  let csv = 'Teacher,Subject,Total Classes,Exam Duty,Weekly Copies,Monthly Copies,Total Payment (BDT)\n';
+  teachers.forEach(t=>{
+    const r = calcTeacherMonthTotal(t, dashMonthKey);
+    csv += '"'+t.name+'","'+(t.subject||'')+'",'+r.classes+','+r.examDuty+','+r.weeklyCopies+','+r.monthlyCopies+','+r.total+'\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'attendance_'+dashMonthKey+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- Month/Year Selectors ---------------- */
+function populateMonthYearSelectors(){
+  const now = new Date(); const curY = now.getFullYear(), curM = now.getMonth()+1;
+  [['dashMonth','dashYear'],['sheetMonth','sheetYear']].forEach(([mid,yid])=>{
+    const ms = document.getElementById(mid), ys = document.getElementById(yid);
+    ms.innerHTML = MONTH_NAMES.map((n,i)=>'<option value="'+(i+1)+'" '+(i+1===curM?'selected':'')+'>'+n+'</option>').join('');
+    let yOpts = ''; for(let y=curY-3; y<=curY+3; y++) yOpts += '<option value="'+y+'" '+(y===curY?'selected':'')+'>'+y+'</option>';
+    ys.innerHTML = yOpts;
+  });
+  dashMonthKey = curY+'-'+String(curM).padStart(2,'0'); sheetMonthKey = dashMonthKey;
+}
+function onDashMonthChange(){
+  const m = document.getElementById('dashMonth').value, y = document.getElementById('dashYear').value;
+  dashMonthKey = y+'-'+String(m).padStart(2,'0'); renderDashboard();
+}
+function onSheetSelectChange(){
+  sheetTeacherId = document.getElementById('sheetTeacherSelect').value || null;
+  const m = document.getElementById('sheetMonth').value, y = document.getElementById('sheetYear').value;
+  sheetMonthKey = y+'-'+String(m).padStart(2,'0');
+  if(sheetTeacherId) loadDraftSheet(); else draftSheet = null;
+  renderSheetTable();
+}
+
+/* ---------------- Bind Events ---------------- */
+function bindStaticEvents(){
+  document.getElementById('loginBtn').addEventListener('click', openLogin);
+  document.getElementById('logoutBtn').addEventListener('click', doLogout);
+  document.getElementById('closeLoginModal').addEventListener('click', closeLogin);
+  document.getElementById('loginSubmit').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keyup', e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginModal').addEventListener('click', e=>{ if(e.target.id==='loginModal') closeLogin(); });
+
+  document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click', ()=>showTab(b.dataset.tab)));
+
+  document.getElementById('dashMonth').addEventListener('change', onDashMonthChange);
+  document.getElementById('dashYear').addEventListener('change', onDashMonthChange);
+  document.getElementById('sheetTeacherSelect').addEventListener('change', onSheetSelectChange);
+  document.getElementById('sheetMonth').addEventListener('change', onSheetSelectChange);
+  document.getElementById('sheetYear').addEventListener('change', onSheetSelectChange);
+
+  document.getElementById('addTeacherBtn').addEventListener('click', addTeacher);
+  document.getElementById('teacherSearch').addEventListener('input', renderTeachersManage);
+  document.getElementById('trashToggle').addEventListener('click', ()=>document.getElementById('trashBody').classList.toggle('show'));
+
+  document.getElementById('saveRatesBtn').addEventListener('click', saveRates);
+  ['rateClass','rateExam','rateWeekly','rateMonthly'].forEach(id=>document.getElementById(id).addEventListener('input', ()=>ratesDirty=true));
+
+  document.getElementById('exportCsvBtn').addEventListener('click', exportDashboardCsv);
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+
+  document.getElementById('closeDeleteModal').addEventListener('click', ()=>document.getElementById('deleteModal').classList.remove('show'));
+  document.getElementById('deleteConfirmBtn').addEventListener('click', confirmPermanentDelete);
+
+  document.getElementById('closeRestoreModal').addEventListener('click', ()=>document.getElementById('restoreModal').classList.remove('show'));
+  document.getElementById('restoreConfirmBtn').addEventListener('click', ()=>{
+    if(pendingRestoreBackup){ performRestore(pendingRestoreBackup); pendingRestoreBackup=null; }
+    document.getElementById('restoreModal').classList.remove('show');
+  });
+
+  document.getElementById('manualBackupBtn').addEventListener('click', ()=>{
+    if(!isLoggedIn()){ toast('Please login to create a backup'); return; }
+    createBackupSnapshot('Manual backup', ()=>toast('✓ Backup created'));
+  });
+  document.getElementById('exportJsonBtn').addEventListener('click', exportJsonBackup);
+  document.getElementById('importJsonBtn').addEventListener('click', ()=>{
+    if(!isLoggedIn()){ toast('Please login to import a backup'); return; }
+    document.getElementById('importJsonInput').click();
+  });
+  document.getElementById('importJsonInput').addEventListener('change', e=>{
+    if(e.target.files[0]) importJsonBackup(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  populateMonthYearSelectors();
+}
+
+/* ---------------- Init ---------------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  bindStaticEvents();
+  initCloud();
+});
+</script>
+</body>
+</html>
